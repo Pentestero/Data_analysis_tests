@@ -1,20 +1,22 @@
 # ================================================================
 #  utils.R — Classe UtilsTest (R5 / Reference Class)
+#
 #  Responsabilités :
 #    - Validation des données d'entrée
 #    - Regroupement bidirectionnel des classes (règle E_i >= seuil)
 #    - Parsing d'un vecteur d'entiers depuis une chaîne
-#    - Saisies interactives console (entier, réel, choix, vecteur)
+#    - Calculs statistiques partagés (indice de dispersion, etc.)
+#
+#  NOTE : les méthodes de saisie console (readline) ont été
+#         supprimées — l'interface graphique Shiny les remplace.
 # ================================================================
 
 UtilsTest <- setRefClass("UtilsTest",
                          
-                         # ------ Champs (attributs) ------
                          fields = list(
                            seuil_regroupement = "numeric"   # seuil E_i minimum (défaut = 5)
                          ),
                          
-                         # ------ Méthodes ------
                          methods = list(
                            
                            # ---- Constructeur ----
@@ -86,47 +88,28 @@ UtilsTest <- setRefClass("UtilsTest",
                            },
                            
                            # ----------------------------------------------------------------
-                           # lire_entier_positif(invite)
-                           #   Boucle jusqu'à obtenir un entier strictement positif.
-                           #   Retourne NULL si l'utilisateur tape 'q'/'quitter'.
+                           # indice_dispersion(counts)
+                           #   Retourne sigma²/mu. = 1 → Poisson, > 1 → surdispersion.
                            # ----------------------------------------------------------------
-                           lire_entier_positif = function(invite) {
-                             repeat {
-                               saisie <- readline(prompt = invite)
-                               if (trimws(tolower(saisie)) %in% c("q", "quitter")) return(NULL)
-                               val <- suppressWarnings(as.integer(saisie))
-                               if (!is.na(val) && val > 0) return(val)
-                               cat("  [!] Entier strictement positif attendu.\n")
-                             }
+                           indice_dispersion = function(counts) {
+                             if (length(counts) < 2) return(NA_real_)
+                             var(counts) / mean(counts)
                            },
                            
                            # ----------------------------------------------------------------
-                           # lire_reel_intervalle(invite, borne_min, borne_max)
-                           #   Boucle jusqu'à obtenir un réel dans [borne_min, borne_max].
-                           #   Retourne NULL si l'utilisateur tape 'q'/'quitter'.
+                           # resume_descriptif(counts)
+                           #   Retourne une liste de statistiques descriptives.
                            # ----------------------------------------------------------------
-                           lire_reel_intervalle = function(invite, borne_min, borne_max) {
-                             repeat {
-                               saisie <- readline(prompt = invite)
-                               if (trimws(tolower(saisie)) %in% c("q", "quitter")) return(NULL)
-                               val <- suppressWarnings(as.numeric(saisie))
-                               if (!is.na(val) && val >= borne_min && val <= borne_max) return(val)
-                               cat(sprintf("  [!] Valeur attendue entre %g et %g.\n", borne_min, borne_max))
-                             }
-                           },
-                           
-                           # ----------------------------------------------------------------
-                           # lire_choix(invite, choix_valides)
-                           #   Boucle jusqu'à obtenir une saisie dans choix_valides.
-                           #   Insensible à la casse. Retourne la saisie normalisée.
-                           # ----------------------------------------------------------------
-                           lire_choix = function(invite, choix_valides) {
-                             repeat {
-                               saisie <- trimws(tolower(readline(prompt = invite)))
-                               if (saisie %in% choix_valides) return(saisie)
-                               cat("  [!] Choix invalide. Options :",
-                                   paste(choix_valides, collapse = " / "), "\n")
-                             }
+                           resume_descriptif = function(counts) {
+                             list(
+                               n       = length(counts),
+                               min     = min(counts),
+                               max     = max(counts),
+                               moyenne = mean(counts),
+                               variance= var(counts),
+                               indice  = indice_dispersion(counts),
+                               tableau = as.data.frame(table(counts), stringsAsFactors = FALSE)
+                             )
                            }
                          )
 )
